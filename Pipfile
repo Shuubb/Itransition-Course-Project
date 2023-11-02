@@ -5,8 +5,12 @@ name = "pypi"
 
 [packages]
 django = "*"
+dj-database-url = "*"
+python-dotenv = "*"
+mysqlclient = "*"
+djangorestframework = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.11"
+python_version = "3.9"
