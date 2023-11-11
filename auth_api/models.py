@@ -1,24 +1,39 @@
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 
-class UserAccountManager(BaseUserManager):
-    def create_user(self, email, password=None):
-        if not email:
-            return ValueError("User Must Have An Email Address")
-        email = self.normalize_email(email)
-        user = self.model(email=email)
 
+class CustomUserManager(BaseUserManager):
+    def create_user(self, username, password=None):
+        if not username: 
+            raise ValueError('Username must be set!')
+        user = self.model(username=username)
         user.set_password(password)
-        user.save()
-
+        user.save(using=self._db)
+        return user
+    
+    def create_superuser(self, username, password=None):
+        user = self.create_user(username, password)
+        user.is_admin = True
+        user.save(using=self._db)
         return user
 
-class UserAccount(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField(max_length=255, unique=True)
+class CustomUser(AbstractBaseUser):
+    username = models.CharField(max_length=40, unique=True)
     is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "username"
+    objects = CustomUserManager()
 
     def __str__(self):
-        return self.email
+        return self.username
+    
+    def has_perm(*args):
+        return True
+
+    def has_module_perms(*args):
+        return True
+    
+    @property
+    def is_staff(self):
+        return self.is_admin
