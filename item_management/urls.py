@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import CollectionChangeView, CollectionCreateView, ItemListChangeView, TagListCreateView, CommentListCreateView, ItemListCreateView, TopicListView
+from rest_framework.permissions import IsAuthenticated
 
 urlpatterns = [
     path('tags/', TagListCreateView.as_view(), name='tag-list-create'),
