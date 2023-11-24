@@ -15,9 +15,20 @@ class OptionalFieldSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CommentSerializer(serializers.ModelSerializer):
+    user_name = serializers.ReadOnlyField(source='user.username')
     class Meta:
         model = Comment
         fields = '__all__'
+        read_only_fields = ['user', 'item']
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+
+        item_id = self.context['request'].data['item_id']
+        item = Item.objects.get(id=item_id)
+        validated_data['item'] = item
+        
+        return super().create(validated_data)
 
 class LikeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -49,6 +60,16 @@ class ItemSerializer(serializers.ModelSerializer):
             validated_data['tags'] += [tag]
         
         return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        comment = validated_data.get('comment', None)
+        if(comment):
+            Comment.objects.create({
+                'item': instance,
+                'user': self.context['request'].user,
+                'text': comment
+                })
+        return instance
 
     class Meta:
         model = Item

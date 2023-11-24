@@ -24,9 +24,35 @@ class TagListCreateView(ListCreateAPIView):
         return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]
 
 class CommentListCreateView(ListCreateAPIView):
-    queryset = Comment.objects.all()
     serializer_class = CommentSerializer
 
+    def get_queryset(self):
+        params = self.request.query_params
+        if 'item_id' in params:
+            item_id = params.get('item_id')
+            queryset = Comment.objects.filter(item__id=item_id)
+            return queryset
+        return Item.objects.none()
+
+    def get_permissions(self):
+        return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]
+    
+class CommentChangeView(RetrieveUpdateDestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    
+    def perform_destroy(self, instance):
+        if self.request.user == instance.user or self.request.user.is_admin:
+            super().perform_destroy(instance)
+        else:
+            raise PermissionDenied("You do not have permission to delete this item.")
+
+    def perform_update(self, serializer):
+        if self.request.user == serializer.instance.user or self.request.user.is_admin:
+            serializer.save()
+        else:
+            raise PermissionDenied("You do not have permission to modify this item.")
+        
     def get_permissions(self):
         return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]
 
@@ -47,6 +73,9 @@ class ItemListCreateView(ListCreateAPIView):
             query |= Q(collection__name__icontains=search_text)
 
             queryset = queryset.filter(query).distinct()
+        if 'tag' in params:
+            tag = params.get('tag')
+            queryset = queryset.filter(tags__name__icontains=tag)
         if 'collection' in params:
             collection = params.get('collection')
             queryset = queryset.filter(collection=collection)
@@ -69,13 +98,13 @@ class ItemListChangeView(RetrieveUpdateDestroyAPIView):
         if self.request.user == instance.creator or self.request.user.is_admin:
             super().perform_destroy(instance)
         else:
-            raise PermissionDenied("You do not have permission to delete this collection.")
+            raise PermissionDenied("You do not have permission to delete this item.")
 
     def perform_update(self, serializer):
         if self.request.user == serializer.instance.creator or self.request.user.is_admin:
             serializer.save()
         else:
-            raise PermissionDenied("You do not have permission to modify this collection.")
+            raise PermissionDenied("You do not have permission to modify this item.")
         
     def get_permissions(self):
         return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]

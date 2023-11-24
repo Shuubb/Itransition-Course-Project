@@ -1,4 +1,3 @@
-from .validators import validate_optional_fields
 from django.db import models
 from auth_api.models import CustomUser
 
@@ -27,7 +26,6 @@ class Item(models.Model):
     
     optional_fields = models.ManyToManyField('OptionalField')
 
-    comments = models.ManyToManyField('Comment', related_name='item_comments')
     likes = models.ManyToManyField('Like', related_name='liked_items')
 
     def __str__(self):
