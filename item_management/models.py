@@ -55,5 +55,4 @@ class Comment(models.Model):
         return f"{self.user.username} - {self.text}"
     
 class Like(models.Model):
-    item = models.ForeignKey(Item, on_delete=models.CASCADE)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)

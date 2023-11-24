@@ -99,12 +99,6 @@ class ItemListChangeView(RetrieveUpdateDestroyAPIView):
             super().perform_destroy(instance)
         else:
             raise PermissionDenied("You do not have permission to delete this item.")
-
-    def perform_update(self, serializer):
-        if self.request.user == serializer.instance.creator or self.request.user.is_admin:
-            serializer.save()
-        else:
-            raise PermissionDenied("You do not have permission to modify this item.")
         
     def get_permissions(self):
         return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]

@@ -1,6 +1,6 @@
 import json
 from rest_framework import serializers
-from .models import Collection, Item, OptionalField, Tag, Comment
+from .models import Collection, Item, Like, OptionalField, Tag, Comment
 from rest_framework.exceptions import PermissionDenied
 
 
@@ -32,7 +32,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class LikeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Comment
+        model = Like
         fields = '__all__'
 
 class ItemSerializer(serializers.ModelSerializer):
@@ -41,6 +41,11 @@ class ItemSerializer(serializers.ModelSerializer):
     likes = LikeSerializer(many=True, read_only=True)
     optional_fields = OptionalFieldSerializer(many=True, read_only=True)
     collection_name = serializers.ReadOnlyField(source='collection.name')
+
+    class Meta:
+        model = Item
+        fields = '__all__'
+        read_only_fields = ['collection', 'creator']
 
     def create(self, validated_data):
         collection_id = self.context['request'].data['collection']
@@ -61,29 +66,28 @@ class ItemSerializer(serializers.ModelSerializer):
         
         return super().create(validated_data)
     
-    def update(self, instance, validated_data):
-        comment = validated_data.get('comment', None)
-        if(comment):
-            Comment.objects.create({
-                'item': instance,
-                'user': self.context['request'].user,
-                'text': comment
-                })
-        return instance
+    def update(self, instance, _):
+        like = self.context['request'].data['like']
+        user = self.context['request'].user
+        if(like == True):
+            instance.likes.add(Like.objects.create(user=user))
+        if(like == False):
+            likeInstance = instance.likes.get(user=user)
+            instance.likes.remove(likeInstance)
+            likeInstance.delete()
 
-    class Meta:
-        model = Item
-        fields = '__all__'
-        read_only_fields = ['collection', 'creator']
+        return instance 
 
 class CollectionSerializer(serializers.ModelSerializer):
     items = ItemSerializer(many=True, read_only=True)
-
-    def create(self, validated_data):
-        validated_data['creator'] = self.context['request'].user
-        return super().create(validated_data)
 
     class Meta:
         model = Collection
         fields = '__all__'
         read_only_fields = ['creator']
+
+    def create(self, validated_data):
+        validated_data['creator'] = self.context['request'].user
+        return super().create(validated_data)
+
+    
